@@ -17,7 +17,7 @@ function convert_to_xpath($jquery_path)
 	$descendant = "";
 	$element = "";
 
-	$items = preg_split("/([\+|\~|\,|\>|\.|\#|\:|\[|\s+]?\w+)/", $jquery_path, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY);
+	$items = preg_split("/([\+|\~|\,|\>|\.|\#|\:|\[|\s+]?[\w\-]+)/", $jquery_path, -1, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY);
 
 	foreach($items as $index => &$item)
 	{
