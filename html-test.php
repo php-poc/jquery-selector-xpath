@@ -19,8 +19,7 @@ $xpathConverter = new JqueryToXPath();
 
 $xpathQuery = new DOMXPath($dom);
 
-$query = $xpathConverter->convert("script:contains('var flashvars')");
-$query = $query->toString(true);
+$query = $xpathConverter->convert("script:contains('var flashvars')", true);
 $nodes = $xpathQuery->query($query);
 ?><!DOCTYPE html>
 <html>

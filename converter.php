@@ -18,31 +18,45 @@ class XPathException extends Exception{}
  */
 class JqueryToXPath{
 	/** @var string - current selector which is being converted */
-	private $jquery_selector = null;
+	private $jquery_selector;
 
 	/** @var  string - main node/element of the query */
 	private $node;
 
 	/** @var string[] - converted predicates */
-	private $predicates = array();
+	private $predicates;
 
 	/** @var  string - XPath axis */
 	private $axis;
 
-	/** @var JqueryToXPath[] - contains other objects if the query contains multiple selectors  - as in $(selector1, selector2, selector3) */
-	private $multiple = array();
+	/** @var JqueryToXPath[] - contains objects to next selector(s) if the query contains multiple selectors - as in $(selector1, selector2, selector3) */
+	private $next;
 
 	/** @var JqueryToXPath[] - contains objects for descendants/children's XPaths*/
-	private $subpath = array();
+	private $subpaths;
+
+	function __construct()
+	{
+		$this->reset();
+	}
+
+	function reset(){
+		$this->axis = null;
+		$this->node = null;
+		$this->jquery_selector = null;
+		$this->subpaths = array();
+		$this->next = array();
+		$this->predicates = array();
+	}
 
 	function setNode($node)
 	{
 		$this->node = $node;
 	}
 
-	function addMultiple(JqueryToXPath $path)
+	function addNextSelector(JqueryToXPath $path)
 	{
-		$this->multiple[] = $path;
+		$this->next[] = $path;
 	}
 
 	function addPredicate($predicate)
@@ -55,31 +69,12 @@ class JqueryToXPath{
 
 	function addSubPath(JqueryToXPath $path)
 	{
-		$this->subpath[] = $path;
+		$this->subpaths[] = $path;
 	}
 
 	function setAxis($axis)
 	{
 		$this->axis = $axis;
-	}
-
-	/**
-	 * a wrapper for the string conversion function in order to allow $globalSearch parameter.
-	 *
-	 * @param bool $documentSearch - if the query is to be executed on the whole document - if set to false(default), value is an absolute path
-	 *
-	 * @return string
-	 */
-	function toString($documentSearch = false)
-	{
-		$path = "";
-
-		if($documentSearch)
-		{
-			$path = "/";
-		}
-
-		return $path.(string)$this;
 	}
 
 	/**
@@ -120,17 +115,17 @@ class JqueryToXPath{
 			$path .= "/{$axis}{$node}{$predicates}";
 		}
 
-		if($this->subpath)
+		if($this->subpaths)
 		{
-			foreach($this->subpath as $otherXpath)
+			foreach($this->subpaths as $otherXpath)
 			{
 				$path .= (string)$otherXpath;
 			}
 		}
 
-		if($this->multiple)
+		if($this->next)
 		{
-			foreach($this->multiple as $otherXpath)
+			foreach($this->next as $otherXpath)
 			{
 				$path .= " | ".(string)$otherXpath;
 			}
@@ -141,18 +136,20 @@ class JqueryToXPath{
 
 	/**
 	 *
-	 * Converts a jQuery selector to its equivalent XPath, which can be used to search in DOMXPath queries or anywhere else
+	 * Converts a jQuery selector to its equivalent XPath, which can be used to search in DOMXPath queries or anywhere else.
 	 * At the moment, only class and ID selectors are implemented.
 	 *
 	 * TODO: implement all selectors which are still not implemented.
 	 *
 	 * @link https://api.jquery.com/category/selectors/
 	 *
-	 * @param $jquery_selector
+	 * @param string $jquery_selector - selector to be converted
 	 *
-	 * @return JqueryToXPath
+	 * @param bool $search_in_document - indicating if the return value must be an absolute path or a document-wide search string
+	 *
+	 * @return string
 	 */
-	function convert($jquery_selector = null)
+	function convert($jquery_selector = null, $search_in_document = false)
 	{
 		if($jquery_selector)
 		{
@@ -240,7 +237,13 @@ class JqueryToXPath{
 			}
 		}
 
-		return $this;
+		$path = (string)$this;
+		if ($search_in_document)
+		{
+			$path = "/{$path}";
+		}
+
+		return $path;
 	}
 
 	function convertID($id)
