@@ -64,7 +64,12 @@ class XPath{
 			$node = "self";
 		}
 
-		if($this->node || $this->predicates)
+		if (!$node)
+		{
+			$node = "*";
+		}
+
+		if($this->node || $this->axis || $this->predicates)
 		{
 			$predicates = join(" and ", $this->predicates);
 
@@ -106,7 +111,7 @@ class XPath{
 	 *
 	 * @param $jquery_selector
 	 *
-	 * @return string
+	 * @return XPath
 	 */
 	function convert($jquery_selector = null)
 	{
@@ -123,7 +128,7 @@ class XPath{
 				"(\+\s*(?'adjacent'.+))",
 				"(\~\s*(?'sibling'.+))",
 				"(\[(?'attribute'[\w\-]+)\]|\[(?'attribute'[\w\-]+)(?'op'\W+)(?'attr_quote'\"|\')(?'attr_val'[^\"]+)\k'attr_quote']|\[(?'attribute'[\w\-]+)(?'op'\W+)(?'attr_val'[^\]]+)\])",
-				"(\:(?'filter'[\w\-]+)(\((?'func_quote'\"|\')(?'arg'.+)\k'func_quote'\)|\((?'arg'[^\)]+)\)?))",
+				"(\:(?'filter'[\w\-]+)(\((?'func_quote'\"|\')(?'arg'.+)\k'func_quote'\)|\((?'arg'[^\)]+)\)?)?)",
 				"(\#(?'id'[\w\-]+))",
 				"(\.(?'className'[\w\-]+))",
 				"(?'element'\w+)",
@@ -138,13 +143,13 @@ class XPath{
 				{
 					/*
 					TODO: test and verify logic for following cases
-					if($match["multiple"])
+					if(!empty($match["multiple"]))
 					{
 						$other = new XPath();
 						$other->convert($match["multiple"]);
 						$this->addMultiple($other);
 					}
-					elseif($match["child"])
+					elseif(!empty($match["child"]))
 					{
 						$child = new XPath();
 						$child->setAxis("child");
@@ -152,7 +157,7 @@ class XPath{
 						$child->convert($match["child"]);
 						$this->addSubPath($child);
 					}
-					elseif($match["adjacent"])
+					elseif(!empty($match["adjacent"]))
 					{
 						$child = new XPath();
 						$child->setAxis("child");
@@ -160,35 +165,35 @@ class XPath{
 						$child->convert($match["adjacent"]);
 						$this->addSubPath($child);
 					}
-					elseif($match["sibling"])
+					elseif(!empty($match["sibling"]))
 					{
 						//TODO: find out the right path for this;
 					}
 					else
 					*/
-					if($match["descendant"])
+					if(!empty($match["descendant"]))
 					{
 						$descendant = new XPath();
 						$descendant->convert($match["descendant"]);
 						$this->addSubPath($descendant);
 					}
-					elseif($match["attribute"])
+					elseif(!empty($match["attribute"]))
 					{
-						$this->addPredicate($this->convertAttribute($match["attribute"], $match["op"], $match["attr_val"]));
+						$this->convertAttribute($match["attribute"], $match["op"], $match["attr_val"]);
 					}
-					elseif($match["filter"])
+					elseif(!empty($match["filter"]))
 					{
-						$this->addPredicate($this->convertFilter($match["filter"], $match["arg"]));
+						$this->convertFilter($match["filter"], $match["arg"]);
 					}
-					elseif($match["className"])
+					elseif(!empty($match["className"]))
 					{
-						$this->addPredicate($this->convertClassName($match["className"]));
+						$this->convertClassName($match["className"]);
 					}
-					elseif($match["id"])
+					elseif(!empty($match["id"]))
 					{
-						$this->addPredicate($this->convertID($match["id"]));
+						$this->convertID($match["id"]);
 					}
-					elseif($match["element"])
+					elseif(!empty($match["element"]))
 					{
 						$this->setNode($match["element"]);
 					}
@@ -201,7 +206,8 @@ class XPath{
 
 	function convertID($id)
 	{
-		return "@id='{$id}'";
+		$this->addPredicate("@id='{$id}'");
+		return $this;
 	}
 
 	function convertAttribute($attr, $op, $attr_val)
@@ -221,7 +227,9 @@ class XPath{
 				break;
 			}
 		}
-		return $predicate;
+		$this->addPredicate($predicate);
+
+		return $this;
 	}
 
 	function convertFilter($filter, $arg)
@@ -232,18 +240,27 @@ class XPath{
 		case "contains":
 			/** @see https://www.w3.org/TR/xpath/#section-Text-Nodes - "<" has to be converted to &gt; */
 			$arg = str_replace("<","&gt;", $arg);
-			$predicate = "contains(descendant-or-self::text(), '{$arg}')";
+			$predicate = "contains(text(), '{$arg}')";
+			break;
+
+		case "parent":
+			$filter = new XPath();
+			$filter->setNode("..");
+			$this->addSubPath($filter);
 			break;
 
 		default:
 			throw new XPathException("Filter '{$filter}' in '{$filter}={$arg}' is not implemented yet. Please contact package author or implement it yourself.");
 			break;
 		}
-		return $predicate;
+
+		$this->addPredicate($predicate);
+		return $this;
 	}
 
 	function convertClassName($className)
 	{
-		return "contains(concat(' ', normalize-space(@class), ' '), ' {$className} ')";
+		$this->addPredicate("contains(concat(' ', normalize-space(@class), ' '), ' {$className} ')");
+		return $this;
 	}
 }
