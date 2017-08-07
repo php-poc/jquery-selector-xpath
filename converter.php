@@ -1,18 +1,38 @@
 <?php
-class XPathException extends Exception{
+/**
+ * @author: Arash Dalir (arash.dalir@gmail.com)
+ * @url https://github.com/php-poc/jquery-selector-xpath
+ *
+ */
 
-}
 
-class XPath{
+/**
+ * Class XPathException
+ */
+class XPathException extends Exception{}
+
+/**
+ * converts a jQuery selector into an XPath equivalent to be used with DOMDocument's DOMXPath->query()
+ *
+ * Class JqueryToXPath
+ */
+class JqueryToXPath{
+	/** @var string - current selector which is being converted */
 	private $jquery_selector = null;
 
+	/** @var  string - main node/element of the query */
 	private $node;
+
+	/** @var string[] - converted predicates */
 	private $predicates = array();
+
+	/** @var  string - XPath axis */
 	private $axis;
-	/** @var XPath[] */
+
+	/** @var JqueryToXPath[] - contains other objects if the query contains multiple selectors  - as in $(selector1, selector2, selector3) */
 	private $multiple = array();
 
-	/** @var XPath[] */
+	/** @var JqueryToXPath[] - contains objects for descendants/children's XPaths*/
 	private $subpath = array();
 
 	function setNode($node)
@@ -20,7 +40,7 @@ class XPath{
 		$this->node = $node;
 	}
 
-	function addMultiple(XPath $path)
+	function addMultiple(JqueryToXPath $path)
 	{
 		$this->multiple[] = $path;
 	}
@@ -33,59 +53,78 @@ class XPath{
 		}
 	}
 
-	function addSubPath(XPath $path)
+	function addSubPath(JqueryToXPath $path)
 	{
 		$this->subpath[] = $path;
 	}
 
 	function setAxis($axis)
 	{
-		if($axis)
-		{
-			$axis .= "::";
-		}
-
 		$this->axis = $axis;
 	}
 
-	function preparePath($anywhere = false)
+	/**
+	 * a wrapper for the string conversion function in order to allow $globalSearch parameter.
+	 *
+	 * @param bool $documentSearch - if the query is to be executed on the whole document - if set to false(default), value is an absolute path
+	 *
+	 * @return string
+	 */
+	function toString($documentSearch = false)
 	{
 		$path = "";
 
-		if($anywhere)
+		if($documentSearch)
 		{
 			$path = "/";
 		}
 
-		$node = $this->node;
+		return $path.(string)$this;
+	}
 
-		if($this->axis && !$node)
+	/**
+	 * returns prepared XPath parts as string
+	 *
+	 * @return string
+	 *
+	 */
+	function __toString()
+	{
+		$path = "";
+
+		$node = $this->node;
+		$axis = $this->axis;
+		$predicates = join(" and ", $this->predicates);
+
+		if ($predicates)
 		{
-			$node = "self";
+			$predicates = "[{$predicates}]";
 		}
 
-		if (!$node)
+		if($axis)
+		{
+			if ($node)
+			{
+				$axis .= "::";
+			}
+		}
+
+		if (!$axis && !$node)
 		{
 			$node = "*";
 		}
 
-		if($this->node || $this->axis || $this->predicates)
+		if($node || $axis || $predicates)
 		{
-			$predicates = join(" and ", $this->predicates);
 
-			if ($predicates)
-			{
-				$predicates = "[{$predicates}]";
-			}
-
-			$path .= "/{$this->axis}{$node}{$predicates}";
+			$path .= "/{$axis}{$node}{$predicates}";
 		}
 
 		if($this->subpath)
 		{
 			foreach($this->subpath as $otherXpath)
 			{
-				$path .= $otherXpath->preparePath();
+				$path .= (string)$otherXpath;
 			}
 		}
 
@@ -93,7 +132,7 @@ class XPath{
 		{
 			foreach($this->multiple as $otherXpath)
 			{
-				$path .= " | ".$otherXpath->preparePath();
+				$path .= " | ".(string)$otherXpath;
 			}
 		}
 
@@ -111,7 +150,7 @@ class XPath{
 	 *
 	 * @param $jquery_selector
 	 *
-	 * @return XPath
+	 * @return JqueryToXPath
 	 */
 	function convert($jquery_selector = null)
 	{
@@ -173,7 +212,7 @@ class XPath{
 					*/
 					if(!empty($match["descendant"]))
 					{
-						$descendant = new XPath();
+						$descendant = new JqueryToXPath();
 						$descendant->convert($match["descendant"]);
 						$this->addSubPath($descendant);
 					}
@@ -244,7 +283,7 @@ class XPath{
 			break;
 
 		case "parent":
-			$filter = new XPath();
+			$filter = new JqueryToXPath();
 			$filter->setNode("..");
 			$this->addSubPath($filter);
 			break;

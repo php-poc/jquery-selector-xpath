@@ -15,12 +15,12 @@ $dom = new DOMDocument();
 $dom->recover = true;
 @$dom->loadHTML($html);
 
-$xpathConverter = new XPath();
+$xpathConverter = new JqueryToXPath();
 
 $xpathQuery = new DOMXPath($dom);
 
 $query = $xpathConverter->convert("script:contains('var flashvars')");
-$query = $query->preparePath(true);
+$query = $query->toString(true);
 $nodes = $xpathQuery->query($query);
 ?><!DOCTYPE html>
 <html>
