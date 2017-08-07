@@ -151,6 +151,8 @@ class JqueryToXPath{
 	 */
 	function convert($jquery_selector = null, $search_in_document = false)
 	{
+		$this->reset();
+
 		if($jquery_selector)
 		{
 			$this->jquery_selector = $jquery_selector;
