@@ -17,6 +17,10 @@ class XPathException extends Exception{}
  * Class JqueryToXPath
  */
 class JqueryToXPath{
+	const QUERY_RELATIVE = "";
+	const QUERY_ABSOLUTE = "/";
+	const QUERY_ANYWHERE = "//";
+
 	/** @var string - current selector which is being converted */
 	private $jquery_selector;
 
@@ -34,6 +38,8 @@ class JqueryToXPath{
 
 	/** @var JqueryToXPath[] - contains objects for descendants/children's XPaths*/
 	private $subpaths;
+
+	private $query_type = self::QUERY_ABSOLUTE;
 
 	function __construct()
 	{
@@ -112,7 +118,7 @@ class JqueryToXPath{
 		if($node || $axis || $predicates)
 		{
 
-			$path .= "/{$axis}{$node}{$predicates}";
+			$path .= "{$this->query_type}{$axis}{$node}{$predicates}";
 		}
 
 		if($this->subpaths)
@@ -145,13 +151,15 @@ class JqueryToXPath{
 	 *
 	 * @param string $jquery_selector - selector to be converted
 	 *
-	 * @param bool $search_in_document - indicating if the return value must be an absolute path or a document-wide search string
+	 * @param string $query_type      - one of self::QUERY_ABSOLUTE, self::QUERY_RELATIVE or self::QUERY_ANYWHERE
 	 *
 	 * @return string
 	 */
-	function convert($jquery_selector = null, $search_in_document = false)
+	function convert($jquery_selector = null, $query_type = null)
 	{
 		$this->reset();
+
+		$this->setQueryType($query_type);
 
 		if($jquery_selector)
 		{
@@ -239,13 +247,7 @@ class JqueryToXPath{
 			}
 		}
 
-		$path = (string)$this;
-		if ($search_in_document)
-		{
-			$path = "/{$path}";
-		}
-
-		return $path;
+		return (string)$this;
 	}
 
 	function convertID($id)
@@ -306,5 +308,13 @@ class JqueryToXPath{
 	{
 		$this->addPredicate("contains(concat(' ', normalize-space(@class), ' '), ' {$className} ')");
 		return $this;
+	}
+
+	function setQueryType($query_type)
+	{
+		if ($query_type && in_array($query_type, array(self::QUERY_RELATIVE, self::QUERY_ANYWHERE, self::QUERY_ABSOLUTE)))
+		{
+			$this->query_type = $query_type;
+		}
 	}
 }
