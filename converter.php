@@ -39,7 +39,7 @@ class JqueryToXPath{
 	/** @var JqueryToXPath[] - contains objects for descendants/children's XPaths*/
 	private $subpaths;
 
-	private $query_type = self::QUERY_ABSOLUTE;
+	private $query_type;
 
 	function __construct()
 	{
@@ -53,6 +53,7 @@ class JqueryToXPath{
 		$this->subpaths = array();
 		$this->next = array();
 		$this->predicates = array();
+		$this->query_type = self::QUERY_ABSOLUTE;
 	}
 
 	function setNode($node)
@@ -151,7 +152,7 @@ class JqueryToXPath{
 	 *
 	 * @param string $jquery_selector - selector to be converted
 	 *
-	 * @param string $query_type      - one of self::QUERY_ABSOLUTE, self::QUERY_RELATIVE or self::QUERY_ANYWHERE
+	 * @param bool   $query_type      - one of self::QUERY_ABSOLUTE, self::QUERY_RELATIVE or self::QUERY_ANYWHERE
 	 *
 	 * @return string
 	 */
@@ -312,7 +313,7 @@ class JqueryToXPath{
 
 	function setQueryType($query_type)
 	{
-		if ($query_type && in_array($query_type, array(self::QUERY_RELATIVE, self::QUERY_ANYWHERE, self::QUERY_ABSOLUTE)))
+		if (isset($query_type) && in_array($query_type, array(self::QUERY_RELATIVE, self::QUERY_ANYWHERE, self::QUERY_ABSOLUTE)))
 		{
 			$this->query_type = $query_type;
 		}
