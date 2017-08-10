@@ -9,7 +9,7 @@
 /**
  * Class XPathException
  */
-class XPathException extends Exception{}
+class JqueryToXPathException extends Exception{}
 
 /**
  * converts a jQuery selector into an XPath equivalent to be used with DOMDocument's DOMXPath->query()
@@ -190,21 +190,7 @@ class JqueryToXPath{
 				{
 					/*
 					TODO: test and verify logic for following cases
-					if(!empty($match["multiple"]))
-					{
-						$other = new XPath();
-						$other->convert($match["multiple"]);
-						$this->addMultiple($other);
-					}
-					elseif(!empty($match["child"]))
-					{
-						$child = new XPath();
-						$child->setAxis("child");
-						$child->setNode("self");
-						$child->convert($match["child"]);
-						$this->addSubPath($child);
-					}
-					elseif(!empty($match["adjacent"]))
+					if(!empty($match["adjacent"]))
 					{
 						$child = new XPath();
 						$child->setAxis("child");
@@ -218,10 +204,22 @@ class JqueryToXPath{
 					}
 					else
 					*/
-					if(!empty($match["descendant"]))
+					if(!empty($match["multiple"]))
+					{
+						$other = new JqueryToXPath();
+						$other->convert($match["multiple"], $query_type);
+						$this->addNextSelector($other);
+					}
+					elseif(!empty($match["child"]))
+					{
+						$child = new JqueryToXPath();
+						$child->convert($match["child"], self::QUERY_ABSOLUTE);
+						$this->addSubPath($child);
+					}
+					elseif(!empty($match["descendant"]))
 					{
 						$descendant = new JqueryToXPath();
-						$descendant->convert($match["descendant"]);
+						$descendant->convert($match["descendant"], self::QUERY_ANYWHERE);
 						$this->addSubPath($descendant);
 					}
 					elseif(!empty($match["attribute"]))
@@ -261,19 +259,22 @@ class JqueryToXPath{
 	{
 		$predicate = "";
 
-		if ($op)
+		switch($op)
 		{
-			switch($op)
-			{
-			case "=":
-				$predicate = "@{$attr}='{$attr_val}'";
-				break;
+		case "=":
+		case "!=":
+			$predicate = "@{$attr} {$op} '{$attr_val}'";
+			break;
 
-			default:
-				throw new XPathException("Operation '{$op}' in '{$attr}{$op}{$attr_val}' is not implemented yet. Please contact package author or implement it yourself.");
-				break;
-			}
+		case null:
+			$predicate="@{$attr}";
+			break;
+
+		default:
+			throw new JqueryToXPathException("Operation '{$op}' in '{$attr}{$op}{$attr_val}' is not implemented yet. Please contact package author or implement it yourself.");
+			break;
 		}
+
 		$this->addPredicate($predicate);
 
 		return $this;
@@ -297,7 +298,7 @@ class JqueryToXPath{
 			break;
 
 		default:
-			throw new XPathException("Filter '{$filter}' in '{$filter}={$arg}' is not implemented yet. Please contact package author or implement it yourself.");
+			throw new JqueryToXPathException("Filter '{$filter}' in '{$filter}={$arg}' is not implemented yet. Please contact package author or implement it yourself.");
 			break;
 		}
 
@@ -313,9 +314,17 @@ class JqueryToXPath{
 
 	function setQueryType($query_type)
 	{
-		if (isset($query_type) && in_array($query_type, array(self::QUERY_RELATIVE, self::QUERY_ANYWHERE, self::QUERY_ABSOLUTE)))
+		if (isset($query_type))
 		{
-			$this->query_type = $query_type;
+			if(in_array($query_type, array(self::QUERY_RELATIVE, self::QUERY_ANYWHERE, self::QUERY_ABSOLUTE), true))
+			{
+				$this->query_type = $query_type;
+			}
+			else
+			{
+				$class = __CLASS__;
+				throw new JqueryToXPathException("query-type can only be one of {$class}::QUERY_RELATIVE, {$class}::QUERY_ANYWHERE or {$class}::QUERY_ABSOLUTE");
+			}
 		}
 	}
 }
