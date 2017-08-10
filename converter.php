@@ -41,6 +41,8 @@ class JqueryToXPath{
 
 	private $query_type;
 
+	private $prefix;
+
 	function __construct()
 	{
 		$this->reset();
@@ -54,6 +56,7 @@ class JqueryToXPath{
 		$this->next = array();
 		$this->predicates = array();
 		$this->query_type = self::QUERY_ABSOLUTE;
+		$this->prefix = "";
 	}
 
 	function setNode($node)
@@ -119,7 +122,7 @@ class JqueryToXPath{
 		if($node || $axis || $predicates)
 		{
 
-			$path .= "{$this->query_type}{$axis}{$node}{$predicates}";
+			$path .= "{$this->prefix}{$this->query_type}{$axis}{$node}{$predicates}";
 		}
 
 		if($this->subpaths)
@@ -154,13 +157,17 @@ class JqueryToXPath{
 	 *
 	 * @param bool   $query_type      - one of self::QUERY_ABSOLUTE, self::QUERY_RELATIVE or self::QUERY_ANYWHERE
 	 *
+	 * @param string   $prefix
+	 *
 	 * @return string
 	 */
-	function convert($jquery_selector = null, $query_type = null)
+	function convert($jquery_selector = null, $query_type = null, $prefix = null)
 	{
 		$this->reset();
 
 		$this->setQueryType($query_type);
+
+		$this->prefix = $prefix;
 
 		if($jquery_selector)
 		{
@@ -207,7 +214,7 @@ class JqueryToXPath{
 					if(!empty($match["multiple"]))
 					{
 						$other = new JqueryToXPath();
-						$other->convert($match["multiple"], $query_type);
+						$other->convert($match["multiple"], $query_type, $prefix);
 						$this->addNextSelector($other);
 					}
 					elseif(!empty($match["child"]))
