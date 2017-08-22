@@ -189,7 +189,7 @@ class JqueryToXPath{
 				"(\s+(?'descendant'.+))",
 			);
 
-			$regex = "/".join("|", $expressions)."/iJ";
+			$regex = "/(?J)".join("|", $expressions)."/i";
 
 			if(preg_match_all($regex, $this->jquery_selector, $matches, PREG_SET_ORDER))
 			{
